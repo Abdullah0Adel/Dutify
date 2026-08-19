@@ -1,18 +1,91 @@
 @import "tailwindcss";
 
+/* globals.css */
+@import "tailwindcss";
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #f7f7fb;
+  --bg-secondary: #ffffff;
+  --bg-hover: #f1f0f9;
+
+  --input-bg: #f8f8fc;
+  --input-border: #e2e2ec;
+
+  --text-primary: #14141c;
+  --text-secondary: #6b6b8a;
+  --text-muted: #9999b3;
+
+  --border-color: #dddce8;
+
+  --danger-bg: #fee2e2;
+  --danger-text: #dc2626;
+  --warning-bg: #fef3c7;
+  --warning-text: #d97706;
+  --success-bg: #d1fae5;
+  --success-text: #059669;
+
+  --active-task-bg: #f0f3ff;
+  --active-task-border: #818cf8;
+  --active-task-glow: rgba(99, 102, 241, 0.15);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --bg-primary: #0b0b0f;
+  --bg-secondary: #13131E;
+  --bg-hover: #1a1a24;
+
+  --input-bg: #1a1a28;          /* أفتح بدرجة بسيطة جداً من الـ Modal (#13131E) */
+  --input-border: #29293a;
+
+  --text-primary: #f5f5fa;
+  --text-secondary: #9999b3;
+  --text-muted: #6b6b8a;
+
+  --border-color: #1f1f2b;
+
+  --danger-bg: #3f1d1d;
+  --danger-text: #f87171;
+  --warning-bg: #3f2f14;
+  --warning-text: #fbbf24;
+  --success-bg: #14332a;
+  --success-text: #34d399;
+
+  --active-task-bg: #1a1a2b;
+  --active-task-border: #6366f1;
+  --active-task-glow: rgba(99, 102, 241, 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
+
+@import "tailwindcss";
+
+@theme {
+  /* 1. تصحيح اسم المتغير وبدون علامة استفهام */
+  --color-brand: var(--accent-color, #6366f1); 
+}
+
+/* 2. السطر ده السحري لـ Tailwind v4 عشان يلقط كلاس الـ .dark اللي بتعمله next-themes */
+@variant dark (&:where(.dark, .dark *));
+
+/* إعدادات الـ Display Density (صلحت بس حرف p في multiplier) */
+.density-comfortable {
+  --spacing-multiplier: 1;
+}
+.density-compact {
+  --spacing-multiplier: 0.75;
+}
+
+body {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* globals.css */
+@layer utilities {
+  .glow-accent {
+    --tw-shadow: 0 0 20px color-mix(in srgb, var(--accent-color) 15%, transparent);
+    box-shadow: var(--tw-shadow);
+  }
+}
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -23,4 +96,4 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-}
+} */

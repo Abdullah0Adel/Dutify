@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Task & Project Management Dashboard
 
-## Getting Started
+A modern, responsive Task and Project Management Application built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Supabase**. Features a sleek dashboard interface with custom Dark/Light mode support.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 📂 **Project Management**: Create, list, and delete projects with custom color tags.
+- 📋 **Task Management**: Create tasks with priority levels (*Low, Medium, High*), due dates, and statuses (*Pending, Completed, Overdue*).
+- 👥 **Team Assignments**: Assign specific tasks to project members dynamically.
+- 🔍 **Filtering & Search**: Instantly filter tasks by status, category, or project.
+- 🎨 **Dynamic Theming**: Full Dark/Light theme integration using CSS variables.
+- 📱 **Responsive Design**: Mobile-friendly sidebar drawer and backdrop modals.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Icons:** [Lucide React](https://lucide.dev/)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Prerequisites
 
-## Deploy on Vercel
+Make sure you have installed:
+- **Node.js**: `v18.0.0` or higher
+- **npm**, **yarn**, or **pnpm**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Installation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+   cd your-repo-name
