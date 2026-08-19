@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cairo, Poppins } from "next/font/google";
-import { notFound } from "next/navigation";
-import "../../globals.css"
+import "../../globals.css";
+
 const PoppinsFont = Poppins({
   variable: "--font-pp",
   subsets: ["latin"],
@@ -19,17 +19,14 @@ export const metadata: Metadata = {
   icons: { icon: "/file.svg" },
 };
 
-export default async function RootLayout({
+export default async function DashboardLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
 }) {
   return (
-              <main className="grow flex flex-col w-full">
-                {children}
-              </main>
-
+    <main className="grow flex flex-col w-full">
+      {children}
+    </main>
   );
 }
