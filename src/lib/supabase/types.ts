@@ -22,7 +22,7 @@ export interface Task {
     id: string
     created_at: string
     title: string
-    descrption: string
+    description?: string | null
     status: string
     due_date: string | null
     project_id: string
