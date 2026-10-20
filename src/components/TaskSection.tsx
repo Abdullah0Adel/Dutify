@@ -24,11 +24,11 @@ interface TaskSectionProps {
   count: number
   variant: 'overdue' | 'pending' | 'completed'
   tasks: TaskItem[]
-  onTaskUpdate: (taskId: string, updates: Partial<TaskItem>) => void
+  // onTaskUpdate: (taskId: string, updates: Partial<TaskItem>) => void
 }
 
 export const TaskSection: React.FC<TaskSectionProps> = ({
-  title, subtitle, count, variant, tasks, onTaskUpdate
+  title, subtitle, count, variant, tasks
 }) => {
   const [isOpen, setIsOpen] = useState(true)
 
@@ -62,7 +62,7 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
       {isOpen && (
         <div className="mt-2 space-y-2.5">
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} variant={variant} onTaskUpdate={onTaskUpdate} />
+            <TaskRow key={task.id} task={task} variant={variant}  />
           ))}
         </div>
       )}

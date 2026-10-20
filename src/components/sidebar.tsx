@@ -1,42 +1,66 @@
 'use client'
-import React, { useState } from 'react'
-import { Calendar, Clock, CalendarOff, CircleCheckBig, LayoutGrid, Menu, Search, Settings, X, Zap, Plus, Trash2 } from "lucide-react";
-import { redirect, RotateCwFadingClock, useRouter, useSearchParams } from "next/navigation";
-import { useProjects } from '@/hooks/useProjects';
+import React, { useMemo, useState } from 'react'
+import { Clock, CalendarOff, CircleCheckBig, LayoutGrid, Menu, Search, Settings, X, Plus, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AddProject from './AddProject';
 import DeleteProject from './DeleteProject';
-
-const projects = [
-  { id: '1', name: 'Design System', color: '#6366f1', count: 2 },
-  { id: '2', name: 'Platform', color: '#14b8a6', count: 4 },
-  { id: '3', name: 'Product', color: '#f59e0b', count: 1 },
-]
+// import { useUserRole } from '@/hooks/useUserRole'
+import { useGetProjectsQuery, useGetTasksQuery, useGetUserRoleQuery} from '@/lib/store/api'
 
 export default function Sidebar() {
-
-  // const [navFilter, setNavFilter] = useState('today')
-  const [activeProject, setActiveProject] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false);
   const [addProject, setAddProject] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
-
-  const { projects, loading } = useProjects()
+  const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
 
   const router = useRouter();
   const searchparams = useSearchParams();
   const navFilter = searchparams.get('filter') || 'today'
 
-  const setNavFilter = (filter: string) =>{
+  const setNavFilter = (filter: string) => {
     router.push(`/dashboard?filter=${filter}`)
     setIsOpen(false)
   }
 
+  const { data: projects = [], isLoading: loading } = useGetProjectsQuery()
 
+  // بنجيب كل الـ tasks مرة واحدة ونحسب منها الـ counts (skip لحد ما نعرف الـ userId)
+  // const { userId, isAdmin } = useUserRole()
+  const { data: role } = useGetUserRoleQuery(null)
+  const userId = role?.userId ?? null
+  const isAdmin = role?.isAdmin ?? false
 
-  // const handleProjectSelect = (projectId: string) => {
+  const { data: allTasks = [] } = useGetTasksQuery(
+    { navFilter: 'all', projectId: null, userId: userId ?? '', isAdmin },
+    { skip: !userId }
+  )
 
-  // } 
+  const counts = useMemo(() => {
+    const now = new Date()
+    const result = {
+      all: allTasks.length,
+      pending: 0,
+      overdue: 0,
+      completed: 0,
+      byProject: {} as Record<string, number>,
+    }
+
+    for (const t of allTasks) {
+      if (t.project_id) {
+        result.byProject[t.project_id] = (result.byProject[t.project_id] ?? 0) + 1
+      }
+
+      if (t.status?.toLowerCase() === 'completed') {
+        result.completed++
+      } else if (t.due_date && new Date(t.due_date) < now) {
+        result.overdue++
+      } else {
+        result.pending++
+      }
+    }
+
+    return result
+  }, [allTasks])
 
   return (
     <>
@@ -65,9 +89,9 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
         <div className='w-63.75 px-3 flex flex-col gap-5 h-full dark:bg-[#0b0b12] border-r dark:border-slate-800 overflow-y-auto'>
 
           {/* Logo + Close button */}
-          <div className='pt-5 pb-5 flex items-center justify-between'>
-            <button type="button">
-              <div className='w-6 h-6 bg-blue-900'></div>
+          <div className='pt-5 flex items-center justify-between'>
+            <button type="button" className='' >
+              <img src="/Dutify.png" alt="" className='w-[70%]  ' />
             </button>
             <button
               onClick={() => setIsOpen(false)}
@@ -95,10 +119,10 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
           <nav className='space-y-0.5'>
             <span className='text-[12px] text-[#777795]'>TASKS</span>
             {[
-              { id: 'pending', label: 'Pending', sub: '3 pending', icon: Clock, count: 3 },
-              { id: 'overdue', label: 'Overdue', sub: 'Next 7 days', icon: CalendarOff, count: null },
-              { id: 'all', label: 'All Tasks', sub: '9 total', icon: LayoutGrid, count: null },
-              { id: 'completed', label: 'Completed', sub: '2 done', icon: CircleCheckBig, count: null },
+              { id: 'pending', label: 'Pending', sub: `${counts.pending} pending`, icon: Clock, count: counts.pending },
+              { id: 'overdue', label: 'Overdue', sub: `${counts.overdue} overdue`, icon: CalendarOff, count: counts.overdue },
+              { id: 'all', label: 'All Tasks', sub: `${counts.all} total`, icon: LayoutGrid, count: 0 },
+              { id: 'completed', label: 'Completed', sub: `${counts.completed} done`, icon: CircleCheckBig, count: 0 },
             ].map(({ id, label, sub, icon: Icon, count }) => (
               <button
                 key={id}
@@ -113,7 +137,7 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
                     <span className={`text-[12px] font-extralight ${navFilter === id ? 'text-white' : 'text-[#777795]'}`}>{sub}</span>
                   </div>
                 </div>
-                {count && (
+                {count > 0 && (
                   <div className='w-5 h-5 bg-white text-(--accent-color) dark:text-white dark:bg-black/20 flex text-[12px] font-bold justify-center items-center rounded-full'>{count}</div>
                 )}
               </button>
@@ -123,14 +147,14 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
           {/* Projects */}
           <nav className='space-y-0.5'>
             <div className='flex justify-between items-center '>
-            <span className='text-[12px] text-[#777795]'>PROJECTS</span>
-          <button
-            type="button"
-            onClick={() => {setAddProject(true)}}
-            className="hover:text-(--text-primary)/50 active:scale-125 focus:outline-none transition duration-300 cursor-pointer"
-          >
-            <Plus />
-          </button>
+              <span className='text-[12px] text-[#777795]'>PROJECTS</span>
+              <button
+                type="button"
+                onClick={() => { setAddProject(true) }}
+                className="hover:text-(--text-primary)/50 active:scale-125 focus:outline-none transition duration-300 cursor-pointer"
+              >
+                <Plus />
+              </button>
             </div>
 
             {loading ? (
@@ -138,89 +162,77 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
               <div className='space-y-1 mt-1'>
                 {[1, 2, 3].map(i => (
                   <div key={i} className='flex items-center gap-3 px-3 py-2'>
-                    {/* الدايرة الصغيرة */}
                     <div className='w-2.5 h-2.5 rounded-full bg-black/10 dark:bg-white/10 animate-pulse' />
-                    {/* اسم المشروع */}
                     <div className={`h-3 rounded-full bg-black/10 dark:bg-white/10 animate-pulse ${i === 1 ? 'w-24' : i === 2 ? 'w-16' : 'w-20'}`} />
                   </div>
                 ))}
               </div>
             ) : (
               projects.map((project) => (
-<div
-  key={project.id}
-  onClick={() => {
-    setIsOpen(false);
-    setNavFilter(`project-${project.id}`);
-  }}
-  className={`group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer select-none
-    ${
-      navFilter === `project-${project.id}`
-        ? 'bg-(--accent-color) text-white shadow-md shadow-indigo-500/10'
-        : 'text-(--text-primary) hover:bg-(--accent-color)/10'
-    }`}
->
-  {/* الجزء الأيسر: نقطة اللون والاسم */}
-  <div className="flex items-center gap-3 min-w-0 pr-2">
-    <span
-      className="w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-white/20"
-      style={{ backgroundColor: project.color || '#6366f1' }}
-    />
-    <p className="text-sm font-medium truncate">
-      {project.name}
-    </p>
-  </div>
+                <div
+                  key={project.id}
+                  onClick={() => {
+                    setIsOpen(false);
+                    setNavFilter(`project-${project.id}`);
+                  }}
+                  className={`group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 cursor-pointer select-none
+                    ${
+                      navFilter === `project-${project.id}`
+                        ? 'bg-(--accent-color) text-white shadow-md shadow-indigo-500/10'
+                        : 'text-(--text-primary) hover:bg-(--accent-color)/10'
+                    }`}
+                >
+                  {/* الجزء الأيسر: نقطة اللون والاسم */}
+                  <div className="flex items-center gap-3 min-w-0 pr-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-white/20"
+                      style={{ backgroundColor: project.color || '#6366f1' }}
+                    />
+                    <p className="text-sm font-medium truncate">
+                      {project.name}
+                    </p>
+                  </div>
 
-  {/* الجزء الأيمن: العداد وزر الحذف */}
-  <div className="flex items-center gap-1.5 shrink-0">
-    {/* عداد المهام */}
-    <span
-      className={`text-xs px-2 py-0.5 rounded-md font-semibold transition-colors ${
-        navFilter === `project-${project.id}`
-          ? 'bg-white/20 text-white'
-          : 'bg-(--input-bg) text-(--text-muted) border border-(--border-color)'
-      }`}
-    >
-      {project.count ?? 0}
-    </span>
+                  {/* الجزء الأيمن: العداد وزر الحذف */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* عداد المهام */}
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                        navFilter === `project-${project.id}`
+                          ? 'bg-white/20 text-white'
+                          : 'bg-(--input-bg) text-(--text-muted) border border-(--border-color)'
+                      }`}
+                    >
+                      {counts.byProject[project.id] ?? 0}
+                    </span>
 
-    {/* زر الحذف: يظهر بنعومة عند الوقوف على العنصر (Group Hover) */}
-    <button
-      type="button"
-      title="Delete Project"
-      onClick={(e) => {
-        e.stopPropagation();
-        setProjectIdDelete(project.id);
-        setIsDeleteOpen(true);
-      }}
-      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer
-        ${
-          navFilter === `project-${project.id}`
-            ? 'hover:bg-red-500/80 text-white'
-            : 'text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/20'
-        }
-        opacity-0 group-hover:opacity-100 focus:opacity-100`}
-    >
-      <Trash2 size={15} />
-    </button>
-  </div>
-</div>              ))
+                    {/* زر الحذف: يظهر بنعومة عند الوقوف على العنصر (Group Hover) */}
+                    <button
+                      type="button"
+                      title="Delete Project"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProjectIdDelete(project.id);
+                        setIsDeleteOpen(true);
+                      }}
+                      className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer
+                        ${
+                          navFilter === `project-${project.id}`
+                            ? 'hover:bg-red-500/80 text-white'
+                            : 'text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/20'
+                        }
+                        opacity-0 group-hover:opacity-100 focus:opacity-100`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </nav>
 
           {/* Spacer */}
           <div className='flex-1' />
-          {/* Progress */}
-          <div className='bg-white/5 rounded-2xl p-4 mb-2'>
-            <div className='flex items-center justify-between mb-2'>
-              <span className='text-[13px] font-semibold text-white'>Progress</span>
-              <span className='text-[13px] font-semibold text-(--accent-color)'>22%</span>
-            </div>
-            <div className='w-full h-1.5 bg-white/10 rounded-full'>
-              <div className='h-1.5 rounded-full bg-(--accent-color)' style={{ width: '22%' }} />
-            </div>
-            <span className='text-[12px] text-[#777795] mt-1 block'>2 of 9 done</span>
-          </div>
 
           {/* Profile */}
           <div className='flex items-center justify-between px-1 pb-5'>
@@ -231,27 +243,26 @@ const [projectIdDelete, setProjectIdDelete] = useState<string | null>(null)
                 <span className='text-[11px] text-[#777795]'>Pro · alex@work.co</span>
               </div>
             </div>
-            <button 
-            onClick={() => redirect("/settings")}
-            className='text-[#777795] hover:text-white transition-colors cursor-pointer'>
+            <button
+              onClick={() => router.push('/settings')}
+              className='text-[#777795] hover:text-white transition-colors cursor-pointer'>
               <Settings size={16} />
             </button>
           </div>
 
         </div>
-
-
       </aside>
-        <AddProject 
-        isOpen={addProject} 
-        onClose={() => setAddProject(false)}
-        />
 
-        <DeleteProject
+      <AddProject
+        isOpen={addProject}
+        onClose={() => setAddProject(false)}
+      />
+
+      <DeleteProject
         isOpen={isDeleteOpen}
-        onClose={() => {setIsDeleteOpen(false)}}
+        onClose={() => { setIsDeleteOpen(false) }}
         ProjectToDelete={projectIdDelete}
-        />
+      />
     </>
   )
 }

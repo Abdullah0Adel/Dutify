@@ -2,19 +2,58 @@
 
 import React, { useState } from 'react'
 import { Clock, CheckCircle2, Circle, UserPlus, Zap, Check, X, Pencil } from 'lucide-react'
-import { useUpdateTask } from '@/hooks/useTasks'
-import { useProjectMembers } from '@/hooks/useProjectMember'
+import {
+  useUpdateTaskMutation,
+  useGetProjectMembersQuery,
+  useGetUserRoleQuery,
+} from '@/lib/store/api'
 import type { TaskItem } from './TaskSection'
-import { useUserRole } from '@/hooks/useUserRole'
 import EditPopup from './EditPopup'
 
 interface TaskRowProps {
   task: TaskItem
   variant: 'overdue' | 'pending' | 'completed'
-  onTaskUpdate: (taskId: string, updates: Partial<TaskItem>) => void
 }
 
-const getPriorityBadgeStyle = (priority: TaskItem['priority']) => {
+// getPriorityBadgeStyle و stringToColor زي ما هم
+
+export const TaskRow: React.FC<TaskRowProps> = ({ task, variant }) => {
+  const [isEditPopup, setIsEditPopup] = useState(false)
+  const [isAssignOpen, setIsAssignOpen] = useState(false)
+
+  const [updateTask] = useUpdateTaskMutation()
+  // مهم: كل الـ rows اللي في نفس المشروع بتشارك نفس الـ request والـ cache
+  const { data: members = [] } = useGetProjectMembersQuery(task.projectTag.id)
+
+
+
+    const { data: role } = useGetUserRoleQuery(task.projectTag.id)
+  const isAdmin = role?.isAdmin ?? false
+
+
+  const isWorking = Boolean(task.working_on_it || task.is_working_on_it)
+
+  const handleComplete = async () => {
+    const normalized = task.status?.toLowerCase()
+    const newStatus = normalized !== 'completed' ? 'completed' : 'pending'
+    await updateTask({ taskId: task.id, updates: { status: newStatus } })
+  }
+
+  const handleAssign = async (userId: string) => {
+    await updateTask({ taskId: task.id, updates: { assigned_to: userId } })
+    setIsAssignOpen(false)
+  }
+
+  const handleUnassign = async () => {
+    await updateTask({ taskId: task.id, updates: { assigned_to: null } })
+    setIsAssignOpen(false)
+  }
+
+  const hanleInProgress = async () => {
+    await updateTask({ taskId: task.id, updates: { working_on_it: !isWorking } })
+  }
+
+  const getPriorityBadgeStyle = (priority: TaskItem['priority']) => {
   switch (priority) {
     case 'High':
       return { backgroundColor: 'var(--danger-bg)', color: 'var(--danger-text)' }
@@ -32,57 +71,6 @@ const stringToColor = (str: string) => {
   return colors[Math.abs(hash) % colors.length]
 }
 
-export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate }) => {
-  const [isEditPopup, setIsEditPopup] = useState(false)
-  const [isAssignOpen, setIsAssignOpen] = useState(false)
-
-  const { updateTask } = useUpdateTask()
-  const { members } = useProjectMembers(task.projectTag.id)
-  const { isAdmin } = useUserRole(task.projectTag.id)
-
-  const isWorking = Boolean(task.working_on_it || task.is_working_on_it)
-
-  const handleComplete = async () => {
-    const normalized = task.status?.toLowerCase()
-    const newStatus = normalized !== 'completed' ? 'completed' : 'pending'
-    const result = await updateTask(task.id, { status: newStatus })
-    if (result.success) onTaskUpdate(task.id, { status: newStatus })
-  }
-
-  const handleAssign = async (member: {
-    user_id: string
-    role: string
-    user: { first_name: string; last_name: string; job_title?: string }
-  }) => {
-    const result = await updateTask(task.id, { assigned_to: member.user_id })
-    if (result.success) {
-      onTaskUpdate(task.id, {
-        assignee: {
-          name: `${member.user.first_name} ${member.user.last_name}`,
-          initials: `${member.user.first_name[0]}${member.user.last_name[0]}`.toUpperCase(),
-          avatarBg: stringToColor(member.user_id),
-          id: member.user_id
-        }
-      })
-    }
-    setIsAssignOpen(false)
-  }
-
-  const handleUnassign = async () => {
-    const result = await updateTask(task.id, { assigned_to: null })
-    if (result.success) {
-      onTaskUpdate(task.id, { assignee: undefined })
-    }
-    setIsAssignOpen(false)
-  }
-
-  const hanleInProgress = async () => {
-    const result = await updateTask(task.id, { working_on_it: !isWorking })
-    if (result.success) {
-      onTaskUpdate(task.id, { working_on_it: !isWorking })
-    }
-  }
-
   return (
     <div
       className="group relative flex flex-col md:flex-row md:items-center justify-between p-3.5 md:p-4 gap-3 md:gap-4 rounded-xl border transition-all duration-200"
@@ -93,7 +81,6 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
         opacity: variant === 'completed' ? 0.65 : 1
       }}
     >
-      {/* 1️⃣ الجزء الأيسر: أيقونة الإنجاز + معلومات المهمة الأساسية */}
       <div className="flex items-start gap-3 min-w-0 flex-1">
         <button 
           onClick={handleComplete} 
@@ -130,7 +117,6 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
             </p>
           )}
 
-          {/* البادجات والمتغيرات */}
           <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] font-medium">
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-(--bg-primary) border border-(--border-color) shrink-0" style={{ color: 'var(--text-secondary)' }}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: task.projectTag.color }} />
@@ -155,10 +141,8 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
         </div>
       </div>
 
-      {/* 2️⃣ الجزء الأيمن: أزرار الحالة والتكليف والتحكم */}
       <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-(--border-color)/50 shrink-0">
         
-        {/* زر التبديل إلى حالة العمل (Working State Button) */}
         <button 
           onClick={hanleInProgress}
           type="button"
@@ -172,7 +156,6 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
           <span>{isWorking ? "Working" : "Start"}</span>
         </button>
 
-        {/* المكلّف بالقيام بالمهام (Assignee Button / Dropdown) */}
         <div className="relative">
           {task.assignee ? (
             <button
@@ -232,7 +215,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
                     return (
                       <button
                         key={m.id}
-                        onClick={() => handleAssign(m)}
+                        onClick={() => handleAssign(m.user_id)}
                         className="w-full flex items-center justify-between px-3 py-2 hover:bg-(--bg-hover) transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -264,7 +247,6 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
           )}
         </div>
 
-        {/* زر التعديل (Edit Icon Button) */}
         {isAdmin && (
           <button 
             type="button"
@@ -276,22 +258,21 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, variant, onTaskUpdate })
           </button>
         )}
 
-        {/* Modal التعديل */}
-        <EditPopup
-          key={task.id}
-          taskId={task.id} 
-          isOpen={isEditPopup}
-          onClose={() => setIsEditPopup(false)}
-          taskToEdit={{
-            title: task.title,
-            description: task.description || '',
-            project: task.projectTag.id,
-            assignee: task.assignee?.name || '',
-            priority: task.priority,
-            status: task.status,
-            dueDate: task.dueDateText || ''
-          }}
-        />
+<EditPopup
+  key={`${task.id}-${isEditPopup}`}
+  taskId={task.id}
+  isOpen={isEditPopup}
+  onClose={() => setIsEditPopup(false)}
+  taskToEdit={{
+    title: task.title,
+    description: task.description || '',
+    project: task.projectTag.id,
+    assignee: task.assignee?.id || '',
+    priority: task.priority,
+    status: task.status,
+    dueDate: task.dueDateText || ''
+  }}
+/>
       </div>
     </div>
   )

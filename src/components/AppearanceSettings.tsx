@@ -15,6 +15,7 @@ export default function AppearanceSettings() {
   
   // تريكة مهمة: لمنع مشاكل الـ Hydration في الـ Client components مع next-themes
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
@@ -27,7 +28,7 @@ export default function AppearanceSettings() {
   ];
 
   return (
-    <div className="p-8 max-w-3xl text-slate-900 dark:text-white">
+    <div className="mx-auto p-8 max-w-3xl text-slate-900 dark:text-white">
       <h2 className="text-2xl font-bold mb-1">Appearance</h2>
       <p className="text-sm text-slate-500 mb-6">Customize how Taskwise looks for you.</p>
 
@@ -70,7 +71,7 @@ export default function AppearanceSettings() {
         </div>
       </div>
 
-      {/* 3. قسم الـ Display Density */}
+      {/* Display Density */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
         <h3 className="font-semibold mb-4">Display density</h3>
         <div className="grid grid-cols-2 gap-4">

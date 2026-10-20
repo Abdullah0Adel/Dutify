@@ -1,67 +1,67 @@
-'use client'
+// 'use client'
 
-import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
-
-
-
-export function useUserRole (projectId?: string | null) {
-    const [userId, setUserId] = useState<string | null>(null)
-    const [userRole, setUserRole] = useState<string | null>(null)
-    const [isMember, setIsMember] = useState<boolean>(false)
-    const [loading, setLoading] = useState(true)
+// import { createClient } from "@/lib/supabase/client"
+// import { useEffect, useState } from "react"
 
 
-    useEffect(() => {
-        const supabase = createClient()
 
-        const fetchUserAndRole = async () => {
-            setLoading(true)
+// export function useUserRole (projectId?: string | null) {
+//     const [userId, setUserId] = useState<string | null>(null)
+//     const [userRole, setUserRole] = useState<string | null>(null)
+//     const [isMember, setIsMember] = useState<boolean>(false)
+//     const [loading, setLoading] = useState(true)
 
-            const { data: { user } } = await supabase.auth.getUser()
 
-            if (!user){
-                setLoading(false)
-                return
-            }
+//     useEffect(() => {
+//         const supabase = createClient()
 
-            setUserId(user.id)
+//         const fetchUserAndRole = async () => {
+//             setLoading(true)
 
-            const { data: useData } = await supabase
-            .from('Users')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
+//             const { data: { user } } = await supabase.auth.getUser()
 
-            const role = useData?.role || 'employee'
-            setUserRole(role)
+//             if (!user){
+//                 setLoading(false)
+//                 return
+//             }
 
-            if (projectId){
-                const { data: memberData } = await supabase
-                .from('project_members')
-                .select('id')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id)
-                .maybeSingle()
+//             setUserId(user.id)
 
-                setIsMember(!!memberData)
-            }else {
-                setIsMember(false)
-            }
+//             const { data: useData } = await supabase
+//             .from('Users')
+//             .select('role')
+//             .eq('id', user.id)
+//             .maybeSingle()
 
-            setLoading(false)
-        }
-        fetchUserAndRole()
-    }, [projectId])
+//             const role = useData?.role || 'employee'
+//             setUserRole(role)
 
-    const isAdmin = userRole?.toLowerCase() === 'admin'
+//             if (projectId){
+//                 const { data: memberData } = await supabase
+//                 .from('project_members')
+//                 .select('id')
+//                 .eq('project_id', projectId)
+//                 .eq('user_id', user.id)
+//                 .maybeSingle()
 
-    return {
-    userId,
-    userRole,
-    isAdmin,
-    // المستخدم يستطيع الوصول والتحكم إذا كان Admin أو عضواً في المشروع
-    canAccessProject: isAdmin || isMember,
-    loading
-}
-}
+//                 setIsMember(!!memberData)
+//             }else {
+//                 setIsMember(false)
+//             }
+
+//             setLoading(false)
+//         }
+//         fetchUserAndRole()
+//     }, [projectId])
+
+//     const isAdmin = userRole?.toLowerCase() === 'admin'
+
+//     return {
+//     userId,
+//     userRole,
+//     isAdmin,
+//     // المستخدم يستطيع الوصول والتحكم إذا كان Admin أو عضواً في المشروع
+//     canAccessProject: isAdmin || isMember,
+//     loading
+// }
+// }

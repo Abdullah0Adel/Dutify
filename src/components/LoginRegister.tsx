@@ -26,6 +26,7 @@ const LoginRegister = () => {
   useEffect(() => {
     const savedForm = localStorage.getItem('form') as Mode;
     if (savedForm === 'login' || savedForm === 'register') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode(savedForm);
     }
   }, []);

@@ -1,6 +1,4 @@
-import { useProjectMembers } from '@/hooks/useProjectMember'
-import { useProjects } from '@/hooks/useProjects'
-import useAddTask, { useTasks } from '@/hooks/useTasks'
+import { useAddTaskMutation, useGetProjectMembersQuery, useGetProjectsQuery } from '@/lib/store/api'
 import { X } from 'lucide-react'
 import React, { useState } from 'react'
 
@@ -13,7 +11,7 @@ interface TaskFormData {
   title: string
   description: string
   project_id: string
-  assigned_to: string
+  assigned_to: string | null
   status: string
   priority: string
   due_date: string
@@ -36,9 +34,6 @@ const AddTask = ({ isOpen, onClose }: AddTaskProps) => {
     working_on_it: false
   })
 
-  const { projects } = useProjects()
-  const { members } = useProjectMembers(projId)
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -46,29 +41,29 @@ const AddTask = ({ isOpen, onClose }: AddTaskProps) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const { addTask } = useAddTask()
 
-const handleAddTask = async (e: React.FormEvent) => {
-  e.preventDefault()
+const { data: projects = [] } = useGetProjectsQuery()
+  const { data: members = [] } = useGetProjectMembersQuery(projId ?? '', { skip: !projId })
+  const [addTask] = useAddTaskMutation()
 
-  const payload = {
-    ...formData,
-    project_id: projId || "",
-    assigned_to: assignee || "",
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await addTask({
+        projectId: projId || '',
+        assignee: assignee || '',
+        task: formData,
+      }).unwrap()
+      onClose() // بيتقفل بس لو الإضافة نجحت
+    } catch (error) {
+      console.error('Failed to add task:', error)
+    }
   }
-
-  console.log("Submitting Task Data:", payload)
-
-  try {
-    await addTask(projId || "", assignee || "", formData)
-        onClose() 
-  } catch (error) {
-    console.error("Failed to add task:", error)
-  }
-}
+  
+  
+  
   if (!isOpen) return null
 
-  // كلاس موحد لجميع المدخلات لمنع التكرار
   const inputClassName =
     "w-full px-4 py-2.5 rounded-xl bg-(--input-bg) border border-(--input-border) text-(--text-primary) placeholder-(--text-secondary) hover:bg-(--accent-color)/10 hover:border-(--accent-color) focus:outline-none focus:border-(--accent-color) focus:ring-1 focus:ring-(--accent-color) transition-all text-sm cursor-pointer"
 

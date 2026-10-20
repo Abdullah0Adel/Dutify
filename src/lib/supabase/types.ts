@@ -9,6 +9,7 @@ export interface Profile {
 }
 
 export interface Projects {
+    count: number
     id: string
     created_at: string
     name: string
@@ -25,7 +26,7 @@ export interface Task {
     status: string
     due_date: string | null
     project_id: string
-    assigned_to: string
+    assigned_to: string | null
     priority: string
     working_on_it: boolean
 }

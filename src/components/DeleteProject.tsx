@@ -1,26 +1,28 @@
-import useDeleteProject from '@/hooks/useProjects'
+import { useDeleteProjectMutation } from '@/lib/store/api'
 import { X } from 'lucide-react'
 import React from 'react'
 
 interface DeleteProjectProps {
-    isOpen:  boolean
-    onClose: () => void
-    ProjectToDelete: string
+  isOpen: boolean
+  onClose: () => void
+  ProjectToDelete: string | null   
 }
 
 
 const DeleteProject = ({isOpen, onClose, ProjectToDelete}: DeleteProjectProps ) => {
 
 
-    const { deleteProject } = useDeleteProject()
-    const handleDeleteProject = async () => {
-        const result = await deleteProject(ProjectToDelete)
-        if(result.success){
-            onClose()
-        } else {
-            console.error(result.error)
-        }
+  const [deleteProject] = useDeleteProjectMutation()
+
+  const handleDeleteProject = async () => {
+    if (!ProjectToDelete) return
+    try {
+      await deleteProject(ProjectToDelete).unwrap()
+      onClose()
+    } catch (error) {
+      console.error(error)
     }
+  }
 
     if (!isOpen) return null
 

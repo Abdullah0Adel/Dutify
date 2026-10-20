@@ -1,18 +1,15 @@
 'use client'
 
-import { useProjects } from '@/hooks/useProjects'
-import { useProjectMembers } from '@/hooks/useProjectMember'
-import { useUpdateTask } from '@/hooks/useTasks'
 import type { TaskItem } from './TaskSection'
 import React, { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import { getErrorMessage, useGetProjectMembersQuery, useGetProjectsQuery, useUpdateTaskMutation } from '@/lib/store/api'
 
 interface EditPopupProps {
   isOpen: boolean
   onClose: () => void
   taskToEdit: TaskFormData
   taskId: string
-  onTaskUpdate: (taskId: string, updates: Partial<TaskItem>) => void
 }
 
 interface TaskFormData {
@@ -48,7 +45,7 @@ const formatTimestamptzToDateInput = (dateStr?: string): string => {
   return `${year}-${month}-${day}`
 }
 
-const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPopupProps) => {
+const EditPopup = ({ isOpen, onClose, taskToEdit, taskId }: EditPopupProps) => {
 
   const [formData, setFormData] = useState<TaskFormData>({
     title: taskToEdit?.title || '',
@@ -63,54 +60,59 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { updateTask } = useUpdateTask()
-  const { projects } = useProjects()
-  const { members } = useProjectMembers(formData.project)   // 👈 أعضاء المشروع المختار حالياً
 
   // تحديث القيم عند فتح الـ Popup أو تغيير التاسك
-  useEffect(() => {
-    if (taskToEdit) {
-      setFormData({
-        title: taskToEdit.title || '',
-        description: taskToEdit.description || '',
-        project: taskToEdit.project || '',
-        assignee: taskToEdit.assignee || '',
-        status: taskToEdit.status || 'pending',
-        priority: formatPriority(taskToEdit.priority),
-        dueDate: formatTimestamptzToDateInput(taskToEdit.dueDate)
-      })
-    }
-  }, [taskToEdit, isOpen])
+  // useEffect(() => {
+  //   if (taskToEdit) {
+  //     setFormData({
+  //       title: taskToEdit.title || '',
+  //       description: taskToEdit.description || '',
+  //       project: taskToEdit.project || '',
+  //       assignee: taskToEdit.assignee || '',
+  //       status: taskToEdit.status || 'pending',
+  //       priority: formatPriority(taskToEdit.priority),
+  //       dueDate: formatTimestamptzToDateInput(taskToEdit.dueDate)
+  //     })
+  //   }
+  // }, [taskToEdit, isOpen])
+
+const [updateTask] = useUpdateTaskMutation()
+  const { data: projects = [] } = useGetProjectsQuery()
+  const { data: members = [] } = useGetProjectMembersQuery(formData.project, {
+    skip: !formData.project,
+  })
 
   const handleEditTask = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError(null)
 
-    const result = await updateTask(taskId, {
-      title: formData.title,
-      description: formData.description,
-      project_id: formData.project,
-      assigned_to: formData.assignee ,
-      priority: formData.priority,
-      status: formData.status,
-      due_date: formData.dueDate || null
-    })
-
-    setSaving(false)
-
-    if (result.success) {
-      onTaskUpdate(taskId, {
-        title: formData.title,
-        description: formData.description,
-        status: formData.status,
-        priority: formData.priority
-      })
+    try {
+      await updateTask({
+        taskId,
+        updates: {
+          title: formData.title,
+          description: formData.description,
+          project_id: formData.project,
+          assigned_to: formData.assignee || null,
+          priority: formData.priority,
+          status: formData.status,
+          due_date: formData.dueDate || null,
+        },
+      }).unwrap()
       onClose()
-    } else {
-      setError(result.error || 'Failed to update task')
+    } catch (err) {
+      setError(getErrorMessage(err) || 'Failed to update task')
+    } finally {
+      setSaving(false)
     }
   }
+
+    const inputClassName =
+    "w-full px-4 py-2.5 rounded-xl bg-(--input-bg) border border-(--input-border) text-(--text-primary) placeholder-(--text-secondary) hover:bg-(--accent-color)/10 hover:border-(--accent-color) focus:outline-none focus:border-(--accent-color) focus:ring-1 focus:ring-(--accent-color) transition-all text-sm cursor-pointer"
+
+  const optionClassName = "bg-(--bg-secondary) text-(--text-primary)"
+
 
   if (!isOpen) return null
 
@@ -153,7 +155,7 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               type="text"
               placeholder="e.g. Design Landing Page"
-              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm"
+              className={inputClassName}
             />
           </div>
 
@@ -165,8 +167,8 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               placeholder="Add task description or additional context..."
-              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm resize-none"
-            />
+              className={inputClassName}
+/>
           </div>
 
           {/* Grid Layout: Project & Assignee */}
@@ -178,11 +180,13 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
               <select
                 value={formData.project}
                 onChange={(e) => setFormData({ ...formData, project: e.target.value, assignee: '' })}
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-900 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm cursor-pointer"
+              className={inputClassName}
               >
                 <option value="">Select project</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id}
+                  className={optionClassName}
+                  >
                     {p.name}
                   </option>
                 ))}
@@ -196,11 +200,13 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
                 value={formData.assignee}
                 onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
                 disabled={!formData.project}
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-900 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className={inputClassName}
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (
-                  <option key={m.user_id} value={m.user_id}>
+                  <option key={m.user_id} value={m.user_id}
+                  className={optionClassName}
+                  >
                     {m.user.first_name} {m.user.last_name}
                   </option>
                 ))}
@@ -208,7 +214,7 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
             </div>
           </div>
 
-          {/* Grid Layout: Status & Priority */}
+          {/*  Status & Priority */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             {/* Status Selector */}
@@ -217,11 +223,11 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-900 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm cursor-pointer"
+              className={inputClassName}
               >
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="overdue">Overdue</option>
+                <option value="pending" className={optionClassName}>Pending</option>
+                <option value="completed" className={optionClassName}>Completed</option>
+                <option value="overdue" className={optionClassName}>Overdue</option>
               </select>
             </div>
 
@@ -231,7 +237,7 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskFormData['priority'] })}
-                className="w-full px-4 py-2.5 rounded-xl bg-neutral-900 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm cursor-pointer"
+              className={inputClassName}
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -248,7 +254,7 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-indigo-500 transition-all text-sm"
+              className={inputClassName}
               />
             </div>
           </div>
@@ -263,7 +269,7 @@ const EditPopup = ({ isOpen, onClose, taskToEdit, taskId, onTaskUpdate }: EditPo
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+              className="px-5 py-2.5 rounded-xl text-sm font-medium text-(--text-secondary) hover:text-(--text-primary) hover:bg-white/5 transition-colors"
             >
               Cancel
             </button>
