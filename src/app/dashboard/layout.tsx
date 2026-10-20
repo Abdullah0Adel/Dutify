@@ -1,14 +1,20 @@
-import Sidebar from "@/components/sidebar";
+import { Suspense } from 'react'
+import Sidebar from '@/components/sidebar'
+import DashboardHeader from '@/components/DashboardHeader'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen w-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-col flex-1 h-full overflow-hidden min-w-0">
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-          {children}
-        </main>
+    <div className="flex h-screen">
+      <Suspense fallback={null}>
+        <Sidebar />
+      </Suspense>
+
+      <div className="bg-(--bg-primary) flex-1 overflow-y-auto">
+        <Suspense fallback={null}>
+          <DashboardHeader />
+        </Suspense>
+        {children}
       </div>
     </div>
-  );
+  )
 }
