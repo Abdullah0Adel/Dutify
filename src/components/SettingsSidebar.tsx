@@ -80,8 +80,9 @@ export default function SettingsSidebar() {
                   </div>
                 )}
               </button>
-
-              <button
+              
+              {/* Account Settings */}
+              {/* <button
               onClick={() => router.push('/settings/account')}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-1.5 rounded-2xl text-left transition-all duration-500 cursor-pointer
                   ${pathname === '/settings/account' ? 'bg-(--accent-color) dark:bg-(--accent-color) ' : 'hover:bg-(--accent-color)/15 '}`}
@@ -98,7 +99,7 @@ export default function SettingsSidebar() {
                     <ChevronRight />
                   </div>
                 )}
-              </button>
+              </button> */}
 
 
               <button
