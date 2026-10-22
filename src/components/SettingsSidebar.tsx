@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, ChevronRight, Lock, Menu, Palette, User, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Lock, LogOut, Menu, Palette, User, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation';
@@ -133,8 +133,9 @@ export default function SettingsSidebar() {
 
             <button
               onClick={handleLogout}
-              className='py-3 px-5 bg-red-700 text-white rounded-xl'
+              className=' w-full flex justify-start items-center gap-3 py-2 px-6 text-[#c5221d] rounded-2xl bg-transparent hover:bg-[#c5221d]/20 cursor-pointer transition duration-300'
             >
+              <LogOut />
               Logout
             </button>
           </div>
@@ -142,4 +143,5 @@ export default function SettingsSidebar() {
       </aside>
     </>
   )
+
 }

@@ -4,8 +4,12 @@ import { Clock, CalendarOff, CircleCheckBig, LayoutGrid, Menu, Search, Settings,
 import { useRouter, useSearchParams } from "next/navigation";
 import AddProject from './AddProject';
 import DeleteProject from './DeleteProject';
-// import { useUserRole } from '@/hooks/useUserRole'
-import { useGetProjectsQuery, useGetTasksQuery, useGetUserRoleQuery} from '@/lib/store/api'
+import {
+  useGetProjectsQuery,
+  useGetTasksQuery,
+  useGetUserRoleQuery,
+  useGetMyProfileQuery,
+} from '@/lib/store/api'
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,12 +28,19 @@ export default function Sidebar() {
 
   const { data: projects = [], isLoading: loading } = useGetProjectsQuery()
 
-  // بنجيب كل الـ tasks مرة واحدة ونحسب منها الـ counts (skip لحد ما نعرف الـ userId)
-  // const { userId, isAdmin } = useUserRole()
+  // null بالظبط عشان يشارك نفس الـ cache مع باقي الـ components
   const { data: role } = useGetUserRoleQuery(null)
   const userId = role?.userId ?? null
   const isAdmin = role?.isAdmin ?? false
+  const email = role?.email ?? ''
 
+  // الاسم والصورة من البروفايل
+  const { data: profile } = useGetMyProfileQuery()
+  const fullName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : ''
+  const initials =
+    `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`.toUpperCase() || '?'
+
+  // بنجيب كل الـ tasks مرة واحدة ونحسب منها الـ counts (skip لحد ما نعرف الـ userId)
   const { data: allTasks = [] } = useGetTasksQuery(
     { navFilter: 'all', projectId: null, userId: userId ?? '', isAdmin },
     { skip: !userId }
@@ -235,17 +246,25 @@ export default function Sidebar() {
           <div className='flex-1' />
 
           {/* Profile */}
-          <div className='flex items-center justify-between px-1 pb-5'>
-            <div className='flex items-center gap-2'>
-              <div className='w-8 h-8 rounded-full bg-(--accent-color) flex items-center justify-center text-white text-[12px] font-bold'>AJ</div>
-              <div className='flex flex-col'>
-                <span className='text-[13px] font-semibold text-white'>Alex Johnson</span>
-                <span className='text-[11px] text-[#777795]'>Pro · alex@work.co</span>
+          <div className='flex items-center justify-between gap-2 px-1 pb-5'>
+            <div className='flex items-center gap-2 min-w-0'>
+              <div className='w-8 h-8 rounded-full overflow-hidden bg-(--accent-color) flex items-center justify-center text-white text-[12px] font-bold shrink-0'>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className='w-full h-full object-cover' />
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className='flex flex-col min-w-0'>
+                <span className='text-[13px] font-semibold text-(--text-primary) truncate'>
+                  {fullName || 'Loading...'}
+                </span>
+                <span className='text-[11px] text-[#777795] truncate'>{email}</span>
               </div>
             </div>
             <button
               onClick={() => router.push('/settings')}
-              className='text-[#777795] hover:text-white transition-colors cursor-pointer'>
+              className='text-[#777795] hover:text-white transition-colors cursor-pointer shrink-0'>
               <Settings size={16} />
             </button>
           </div>

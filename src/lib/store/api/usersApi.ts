@@ -10,6 +10,7 @@ export interface AppUser {
 
 export interface UserRoleData {
   userId: string | null
+  email: string | null
   userRole: string | null
   isAdmin: boolean
   canAccessProject: boolean
@@ -62,6 +63,7 @@ export const usersApi = baseApi.injectEndpoints({
           return {
             data: {
               userId: null,
+              email: null,
               userRole: null,
               isAdmin: false,
               canAccessProject: false,
@@ -97,6 +99,7 @@ export const usersApi = baseApi.injectEndpoints({
         return {
           data: {
             userId: user.id,
+            email: user.email ?? null,
             userRole: role,
             isAdmin,
             // المستخدم يستطيع الوصول والتحكم إذا كان Admin أو عضواً في المشروع

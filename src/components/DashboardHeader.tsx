@@ -57,7 +57,7 @@ const isAdmin = role?.isAdmin ?? false
   })
 
   return (
-    <header className='w-full border-b border-(--border-color) p-6'>
+    <header className='w-full border-b border-(--border-color) p-6 pt-15 md:pt-6 '>
 
       {/* Title Row */}
       <div className='flex items-center justify-between mb-6'>
